@@ -54,4 +54,30 @@ table(srs_not_fraud$isFlaggedFraud)
 # anova (of types)
 summary(aov(amount ~ type, data = srs_df_filtered))
 
+# boxplot
+boxplot(srs_fraud$amount,
+        main = "Transaction amount (fraud) boxplot",
+        xlab = "USD ($)",
+        ylab = "Transaction amount",
+        col = "#6A0DAD",
+        border = "black",
+        horizontal = TRUE,
+        notch = TRUE
+)
+boxplot(srs_fraud$amount,
+        main = "Transaction amount (not fraud) boxplot",
+        xlab = "USD ($)",
+        ylab = "Transaction amount",
+        col = "#56A0D3",
+        border = "black",
+        horizontal = TRUE,
+        notch = TRUE
+)
 
+library(pROC)
+library(ggplot2)
+
+ggroc(roc(srs_df_filtered$isFraud, predictions)) +
+  theme_minimal() + 
+  ggtitle("My ROC curve") + 
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="green", linetype="dashed")
