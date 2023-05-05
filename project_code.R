@@ -40,16 +40,7 @@ summary(log_reg_model)
 
 #t test of means
 t.test(srs_fraud$amount, srs_not_fraud$amount, alternative = "two.sided", var.equal = FALSE)
-
-#
-table(srs_fraud$MFA.enabled)
-table(srs_not_fraud$MFA.enabled)
-
-table(srs_fraud$isFraudPrevented)
-table(srs_not_fraud$isFraudPrevented)
-
-table(srs_fraud$isFlaggedFraud)
-table(srs_not_fraud$isFlaggedFraud)
+TukeyHSD(aov(amount ~ type, data = srs_df_filtered), conf.level=.95)
 
 # anova (of types)
 summary(aov(amount ~ type, data = srs_df_filtered))
@@ -57,16 +48,16 @@ summary(aov(amount ~ type, data = srs_df_filtered))
 # boxplot
 boxplot(srs_fraud$amount,
         main = "Transaction amount (fraud) boxplot",
-        xlab = "USD ($)",
+        xlab = "Unknown Currency(?)",
         ylab = "Transaction amount",
         col = "#6A0DAD",
         border = "black",
         horizontal = TRUE,
         notch = TRUE
 )
-boxplot(srs_fraud$amount,
+boxplot(srs_not_fraud$amount,
         main = "Transaction amount (not fraud) boxplot",
-        xlab = "USD ($)",
+        xlab = "Unknown Currency(?)",
         ylab = "Transaction amount",
         col = "#56A0D3",
         border = "black",
