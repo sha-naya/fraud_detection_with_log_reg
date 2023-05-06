@@ -35,9 +35,6 @@ library(Metrics)
 Metrics::recall(actual = srs_df_filtered$isFraud, predicted = predictions)
 Metrics::precision(actual = srs_df_filtered$isFraud, predicted = predictions)
 
-log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$amount, family = binomial)
-summary(log_reg_model)
-
 ### ANOVA (types column)
 # normal distribution test
 fit <- aov(amount ~ type, data = srs_df_filtered)
@@ -75,8 +72,8 @@ library(ggplot2)
 
 ggroc(roc(srs_df_filtered$isFraud, predictions)) +
   theme_minimal() + 
-  ggtitle("My ROC curve") + 
-  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="green", linetype="dashed")
+  ggtitle("ROC curve") + 
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="#6495ED", linetype="dashed")
 
 
 
