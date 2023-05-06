@@ -12,7 +12,7 @@ srs_not_fraud <- sample_n(not_fraud_subset, 500)
 
 srs_df <- rbind(srs_fraud, srs_not_fraud)
 
-relevant_cols <- c("type", "amount", "oldbalanceOrg", "newbalanceOrig", "oldbalanceDest", "newbalanceDest", "isFraud")
+relevant_cols <- c("type", "amount", "isFraud")
 srs_df_filtered <- srs_df[relevant_cols]
 
 srs_df_filtered$type <- as.factor(srs_df_filtered$type)
@@ -21,10 +21,10 @@ table(srs_fraud$type)
 table(srs_not_fraud$type)
 
 #log reg models
-log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$type, family = binomial)
+log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$amount, family = binomial)
 summary(log_reg_model)
 
-log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$amount, family = binomial)
+log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$amount + srs_df_filtered$type, family = binomial)
 summary(log_reg_model)
 
 predictions <- predict(log_reg_model, type = "response")
@@ -38,12 +38,17 @@ Metrics::precision(actual = srs_df_filtered$isFraud, predicted = predictions)
 log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$amount, family = binomial)
 summary(log_reg_model)
 
-#t test of means
-t.test(srs_fraud$amount, srs_not_fraud$amount, alternative = "two.sided", var.equal = FALSE)
-TukeyHSD(aov(amount ~ type, data = srs_df_filtered), conf.level=.95)
+### ANOVA (types column)
+# normal distribution test
+fit <- aov(amount ~ type, data = srs_df_filtered)
+resid <- residuals(fit)
+hist(resid, main="Residuals Distribution of ANOVA", xlab = "Amounts", col="#FFA500")
+qqnorm(resid)
+shapiro.test(resid)
 
-# anova (of types)
-summary(aov(amount ~ type, data = srs_df_filtered))
+## homogeneity of variance test
+leveneTest(amount ~ type, data = srs_df_filtered)
+
 
 # boxplot
 boxplot(srs_fraud$amount,
@@ -72,3 +77,23 @@ ggroc(roc(srs_df_filtered$isFraud, predictions)) +
   theme_minimal() + 
   ggtitle("My ROC curve") + 
   geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="green", linetype="dashed")
+
+
+
+###############################################################################
+hist(srs_fraud$amount, main="Distribution of Fraudulent Transactions Amounts", xlab = "Amounts", col="#800000")
+shapiro.test(srs_fraud$amount)
+hist(srs_not_fraud$amount, main="Distribution of Normal Transactions Amounts", xlab = "Amounts", col="#DC143C")
+shapiro.test(srs_not_fraud$amount)
+
+log_fraud_amount <- log(srs_fraud$amount)
+hist(log_fraud_amount, main="Log Distribution of Fraudulent Transactions Amounts", xlab = "Amounts", col="#008000")
+mean(log_fraud_amount)
+shapiro.test(log_fraud_amount)
+
+log_not_fraud_amount <- log(srs_not_fraud$amount)
+hist(log_not_fraud_amount, main="Log Distribution of Normal Transactions Amounts", xlab = "Amounts", col="#7FFF00")
+mean(log_not_fraud_amount)
+shapiro.test(log_not_fraud_amount)
+
+
