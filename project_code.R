@@ -15,40 +15,13 @@ srs_df <- rbind(srs_fraud, srs_not_fraud)
 relevant_cols <- c("type", "amount", "isFraud")
 srs_df_filtered <- srs_df[relevant_cols]
 
+write.csv(srs_df_filtered, "Ashkenov_Final_Project_data.csv", row.names=FALSE)
+
 srs_df_filtered$type <- as.factor(srs_df_filtered$type)
 srs_df_filtered$isFraud <- as.factor(srs_df_filtered$isFraud)
 
 table(srs_fraud$type)
 table(srs_not_fraud$type)
-
-#log reg models
-log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$amount, family = binomial)
-summary(log_reg_model)
-
-log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$amount + srs_df_filtered$type, family = binomial)
-summary(log_reg_model)
-
-predictions <- predict(log_reg_model, type = "response")
-library(pROC)
-roc(srs_df_filtered$isFraud, predictions)
-
-srs_df_filtered$predictions <- predictions
-srs_df_filtered$predictions <- ifelse(predictions>=0.5, 1,0)
-srs_df_filtered$predictions <- as.factor(srs_df_filtered$predictions)
-
-confusionMatrix(srs_df_filtered$predictions, srs_df_filtered$isFraud, mode = "everything")
-
-### ANOVA (types column)
-# normal distribution test
-fit <- aov(amount ~ type, data = srs_df_filtered)
-resid <- residuals(fit)
-hist(resid, main="Residuals Distribution of ANOVA", xlab = "Amounts", col="#FFA500")
-qqnorm(resid)
-shapiro.test(resid)
-
-## homogeneity of variance test
-leveneTest(amount ~ type, data = srs_df_filtered)
-
 
 # boxplot
 boxplot(srs_fraud$amount,
@@ -70,15 +43,7 @@ boxplot(srs_not_fraud$amount,
         notch = TRUE
 )
 
-library(pROC)
-library(ggplot2)
-
-ggroc(roc(srs_df_filtered$isFraud, predictions)) +
-  theme_minimal() + 
-  ggtitle("ROC curve") + 
-  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="#6495ED", linetype="dashed")
-
-################################################################################
+### T-test
 hist(srs_fraud$amount, main="Distribution of Fraudulent Transactions Amounts", xlab = "Amounts", col="#800000")
 shapiro.test(srs_fraud$amount)
 hist(srs_not_fraud$amount, main="Distribution of Normal Transactions Amounts", xlab = "Amounts", col="#DC143C")
@@ -94,7 +59,42 @@ hist(log_not_fraud_amount, main="Log Distribution of Normal Transactions Amounts
 mean(log_not_fraud_amount)
 shapiro.test(log_not_fraud_amount)
 
-################################################################################
+### ANOVA (types column)
+# normal distribution test
+fit <- aov(amount ~ type, data = srs_df_filtered)
+resid <- residuals(fit)
+hist(resid, main="Residuals Distribution of ANOVA", xlab = "Amounts", col="#FFA500")
+qqnorm(resid)
+shapiro.test(resid)
+
+# homogeneity of variance test
+leveneTest(amount ~ type, data = srs_df_filtered)
+
+### Logistic Regression
+log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$amount, family = binomial)
+summary(log_reg_model)
+
+log_reg_model <- glm(srs_df_filtered$isFraud ~ srs_df_filtered$amount + srs_df_filtered$type, family = binomial)
+summary(log_reg_model)
+
+predictions <- predict(log_reg_model, type = "response")
+library(pROC)
+roc(srs_df_filtered$isFraud, predictions)
+
+srs_df_filtered$predictions <- predictions
+srs_df_filtered$predictions <- ifelse(predictions>=0.5, 1,0)
+srs_df_filtered$predictions <- as.factor(srs_df_filtered$predictions)
+
+confusionMatrix(srs_df_filtered$predictions, srs_df_filtered$isFraud, mode = "everything")
+
+library(pROC)
+library(ggplot2)
+
+ggroc(roc(srs_df_filtered$isFraud, predictions)) +
+  theme_minimal() + 
+  ggtitle("ROC curve") + 
+  geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="#6495ED", linetype="dashed")
+
 library(caret)
 ctrl <- trainControl(method = "repeatedcv", 
                      number = 10, 
