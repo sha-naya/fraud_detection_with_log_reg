@@ -16,6 +16,7 @@ relevant_cols <- c("type", "amount", "isFraud")
 srs_df_filtered <- srs_df[relevant_cols]
 
 srs_df_filtered$type <- as.factor(srs_df_filtered$type)
+srs_df_filtered$isFraud <- as.factor(srs_df_filtered$isFraud)
 
 table(srs_fraud$type)
 table(srs_not_fraud$type)
@@ -31,9 +32,11 @@ predictions <- predict(log_reg_model, type = "response")
 library(pROC)
 roc(srs_df_filtered$isFraud, predictions)
 
-library(Metrics)
-Metrics::recall(actual = srs_df_filtered$isFraud, predicted = predictions)
-Metrics::precision(actual = srs_df_filtered$isFraud, predicted = predictions)
+srs_df_filtered$predictions <- predictions
+srs_df_filtered$predictions <- ifelse(predictions>=0.5, 1,0)
+srs_df_filtered$predictions <- as.factor(srs_df_filtered$predictions)
+
+confusionMatrix(srs_df_filtered$predictions, srs_df_filtered$isFraud, mode = "everything")
 
 ### ANOVA (types column)
 # normal distribution test
@@ -75,9 +78,7 @@ ggroc(roc(srs_df_filtered$isFraud, predictions)) +
   ggtitle("ROC curve") + 
   geom_segment(aes(x = 1, xend = 0, y = 0, yend = 1), color="#6495ED", linetype="dashed")
 
-
-
-###############################################################################
+################################################################################
 hist(srs_fraud$amount, main="Distribution of Fraudulent Transactions Amounts", xlab = "Amounts", col="#800000")
 shapiro.test(srs_fraud$amount)
 hist(srs_not_fraud$amount, main="Distribution of Normal Transactions Amounts", xlab = "Amounts", col="#DC143C")
@@ -93,4 +94,20 @@ hist(log_not_fraud_amount, main="Log Distribution of Normal Transactions Amounts
 mean(log_not_fraud_amount)
 shapiro.test(log_not_fraud_amount)
 
-
+################################################################################
+library(caret)
+ctrl <- trainControl(method = "repeatedcv", 
+                     number = 10, 
+                     repeats = 5, 
+                     verboseIter = FALSE)
+ada_grid <- expand.grid(iter = 5, maxdepth = 1:5, nu = seq(0.1, 0.5, by=0.1))
+ada_model <- train(isFraud ~ amount,
+                      data = srs_df_filtered,
+                      method = "ada",
+                      preProcess = c("scale", "center"),
+                      trControl = ctrl,
+                      tuneGrid = ada_grid
+                      )
+summary(ada_model)
+ada_predictions <- predict(ada_model)
+confusionMatrix(ada_predictions, srs_df_filtered$isFraud, mode = "everything")
